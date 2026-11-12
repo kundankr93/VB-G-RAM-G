@@ -164,6 +164,9 @@ function safeEvidenceUrl(value) {
 function Dashboard({ session, onLogout }) {
   const [categories, setCategories] = useState([])
   const [works, setWorks] = useState([])
+  const [mapWorks, setMapWorks] = useState([])
+  const [mapWorkTotal, setMapWorkTotal] = useState(0)
+  const [mapWorksSampled, setMapWorksSampled] = useState(false)
   const [users, setUsers] = useState([])
   const [summary, setSummary] = useState(null)
   const [filters, setFilters] = useState({
@@ -240,21 +243,31 @@ function Dashboard({ session, onLogout }) {
       if (search.trim()) query.set('q', search.trim())
       if (showDelayedOnly) query.set('delayed', 'true')
       const summaryQuery = new URLSearchParams(Object.entries(filters).filter(([, value]) => value))
-      if (showDemoData) summaryQuery.set('includeDemo', 'true')
+      const mapQuery = new URLSearchParams(Object.entries(filters).filter(([, value]) => value))
+      if (showDemoData) {
+        summaryQuery.set('includeDemo', 'true')
+        mapQuery.set('includeDemo', 'true')
+      }
+      if (search.trim()) mapQuery.set('q', search.trim())
+      if (showDelayedOnly) mapQuery.set('delayed', 'true')
       const requests = [
         api(`/api/works?${query}`, {}, session.token),
         api('/api/categories', {}, session.token),
         api(`/api/dashboard/summary?${summaryQuery}`, {}, session.token),
         api('/api/works/locations', {}, session.token),
+        api(`/api/works/map?${mapQuery}`, {}, session.token),
       ]
       if (session.user.role === 'admin') requests.push(api('/api/auth/users', {}, session.token))
-      const [workResult, categoryResult, summaryResult, locationResult, userResult] = await Promise.all(requests)
+      const [workResult, categoryResult, summaryResult, locationResult, mapResult, userResult] = await Promise.all(requests)
       const lastPage = Math.max(1, workResult.pagination.pages)
       if (page > lastPage) {
         setPage(lastPage)
         return
       }
       setWorks(workResult.data)
+      setMapWorks(mapResult.data || [])
+      setMapWorkTotal(mapResult.total || 0)
+      setMapWorksSampled(Boolean(mapResult.sampled))
       setPagination(workResult.pagination)
       setCategories(categoryResult.data)
       setSummary(summaryResult.data)
@@ -680,11 +693,11 @@ function Dashboard({ session, onLogout }) {
 
           <section className="geo-grid" id="geography">
             <article className="panel map-panel">
-              <div className="panel-heading"><div><h2>Works map</h2><p>Page {pagination.page} of {pagination.pages || 1} · {pagination.total} matching works</p>{showDemoData && <span className="demo-badge section-demo-badge">Demo data included</span>}</div><div className="map-heading-actions"><DemoDataToggle enabled={showDemoData} onChange={setShowDemoData} /><span className="panel-icon"><MapPin size={17} /></span></div></div>
+              <div className="panel-heading"><div><h2>Works map</h2><p>{mapWorks.length.toLocaleString('en-IN')} markers · {mapWorkTotal.toLocaleString('en-IN')} matching works{mapWorksSampled ? ' · representative sample' : ''}</p>{showDemoData && <span className="demo-badge section-demo-badge">Demo data included</span>}</div><div className="map-heading-actions"><DemoDataToggle enabled={showDemoData} onChange={setShowDemoData} /><span className="panel-icon"><MapPin size={17} /></span></div></div>
               <div className="map-frame">
                 <MapContainer center={[23.15, 79.95]} zoom={9} scrollWheelZoom={false} className="leaflet-map">
                   <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                  {filteredWorks.filter((work) => Number.isFinite(work.lat) && Number.isFinite(work.lng)).map((work) => (
+                   {mapWorks.filter((work) => Number.isFinite(work.lat) && Number.isFinite(work.lng)).map((work) => (
                     <Circle key={work._id} center={[work.lat, work.lng]} radius={150} pathOptions={{ color: STATUS_COLORS[work.status] || '#527af2', fillColor: STATUS_COLORS[work.status] || '#527af2', fillOpacity: 0.8 }}>
                       <Popup><strong>{work.name}</strong><br />{work.status} · {work.actualProgress}%<br />{work.location?.gramPanchayat}, {work.location?.district}</Popup>
                     </Circle>
@@ -699,7 +712,7 @@ function Dashboard({ session, onLogout }) {
                 Boundaries cover all 36 states and union territories in the pinned state layer. Work records are only for areas entered or imported; seeded records are demo data, not nationwide coverage. Any reported-zero area is an explicit manual officer/admin declaration, not an official coverage feed.
               </div>
               <DistrictChoropleth
-                active={activeTab === 'GIS & geography'}
+                active={true}
                 districts={districtData}
                 selectedState={filters.state}
                 selectedDistrict={filters.district}

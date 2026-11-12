@@ -166,7 +166,7 @@ async function validateCategorySubcategory(body) {
 router.use(requireAuth);
 router.use((request, response, next) => {
   const filteredList = request.method === 'GET' &&
-    (request.path === '/' || request.path === '/export.csv');
+    (request.path === '/' || request.path === '/map' || request.path === '/export.csv');
   if (filteredList) return next();
   if (request.method === 'GET' && request.path === '/locations/gram-panchayats') {
     return rejectUnknownQueryParams(['state', 'district', 'block'])(request, response, next);
@@ -554,6 +554,45 @@ router.get('/locations', async (request, response, next) => {
         })),
       })),
     })) });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+// Lightweight map feed: return a representative sample of matching works,
+// independent of the registry's 50-record pagination. Keep the payload small
+// enough for Leaflet while preserving the status mix across the filtered set.
+router.get('/map', async (request, response, next) => {
+  try {
+    const validationError = validateWorkQuery(request.query, { pagination: false });
+    if (validationError) return response.status(400).json({ message: validationError });
+
+    const filter = buildWorkFilter(request.query);
+    const [data, total] = await Promise.all([
+      Work.aggregate([
+        { $match: filter },
+        { $sample: { size: 3000 } },
+        {
+          $project: {
+            _id: 1,
+            name: 1,
+            status: 1,
+            actualProgress: 1,
+            plannedProgress: 1,
+            lat: 1,
+            lng: 1,
+            location: 1,
+          },
+        },
+      ]),
+      Work.countDocuments(filter),
+    ]);
+
+    return response.json({
+      data,
+      total,
+      sampled: total > data.length,
+    });
   } catch (error) {
     return next(error);
   }
