@@ -229,6 +229,23 @@ router.get('/summary', requireAuth, async (request, response, next) => {
         : [],
     ]);
 
+    // Imported/demo datasets may not have FieldUpdate history yet. In that case,
+    // build a useful snapshot from the work records themselves rather than leaving
+    // the dashboard chart empty. Use plannedStartDate as the monthly time bucket.
+    const effectiveProgressTrend = progressTrend.length
+      ? progressTrend
+      : await Work.aggregate([
+          { $match: filter },
+          {
+            $group: {
+              _id: { $dateToString: { format: '%Y-%m', date: '$plannedStartDate' } },
+              plannedProgress: { $avg: '$plannedProgress' },
+              actualProgress: { $avg: '$actualProgress' },
+            },
+          },
+          { $sort: { _id: 1 } },
+        ]);
+
     const kpis = kpiRows[0] || {
       total: 0,
       proposed: 0,
@@ -261,7 +278,7 @@ router.get('/summary', requireAuth, async (request, response, next) => {
         byStatus,
         byCategory: categoryRows.map((entry) => ({ name: entry._id, count: entry.count })),
         byDistrict: buildGeography(geographyRows, coverageReports),
-        progressTrend: progressTrend.map((entry) => ({
+        progressTrend: effectiveProgressTrend.map((entry) => ({
           month: entry._id,
           plannedProgress: Math.round(entry.plannedProgress * 10) / 10,
           actualProgress: Math.round(entry.actualProgress * 10) / 10,
