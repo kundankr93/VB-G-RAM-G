@@ -20,7 +20,8 @@
     "create-admin": "node src/seed/createAdmin.js",
     "import-locations": "node src/seed/importLocations.js",
     "fetch-lgd-blocks": "node src/seed/fetchLgdBlocks.js",
-    "init-categories": "node src/seed/initializeCategories.js"
+    "init-categories": "node src/seed/initializeCategories.js",
+    "set-admin-password": "node src/seed/setAdminPassword.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
