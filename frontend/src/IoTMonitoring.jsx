@@ -18,6 +18,7 @@ export default function IoTMonitoring({ session, api }) {
   const [tab, setTab] = useState('overview')
   const [running, setRunning] = useState(false)
   const [readings, setReadings] = useState([])
+  const [readingTotal, setReadingTotal] = useState(0)
   const [devices, setDevices] = useState([])
   const [alerts, setAlerts] = useState([])
   const [verification, setVerification] = useState([])
@@ -35,7 +36,7 @@ export default function IoTMonitoring({ session, api }) {
         api('/api/iot/readings?limit=100', {}, token), api('/api/iot/devices', {}, token),
         api('/api/iot/alerts', {}, token), api('/api/iot/verification', {}, token), api('/api/iot/report', {}, token),
       ])
-      setReadings((r.data || []).slice().reverse()); setDevices(d.data || []); setAlerts(a.data || []); setVerification(v.data || []); setReport(p.data || null)
+      setReadings((r.data || []).slice().reverse()); setReadingTotal(Number.isFinite(r.total) ? r.total : (r.data || []).length); setDevices(d.data || []); setAlerts(a.data || []); setVerification(v.data || []); setReport(p.data || null)
       const latest = (r.data || [])[0]; if (latest?.waterLevel != null) levelRef.current = latest.waterLevel
     } catch (e) { setError(e.message || 'Unable to load IoT data.') }
     finally { setBusy(false) }
@@ -75,7 +76,7 @@ export default function IoTMonitoring({ session, api }) {
     {tab==='overview' && <>
       <div className="iot-module-grid">{modules.map(m => <article className="panel iot-module" key={m.type}><div><span className="iot-module-icon"><Activity size={19}/></span><h3>{m.label}</h3></div><p>{m.metrics.join(' · ')}</p><button className="button secondary" onClick={async()=>{try{await sendReading(m.type);await refresh()}catch(e){setError(e.message)}}}>Add simulated reading</button></article>)}</div>
       <div className="iot-actions" style={{margin:'14px 0'}}><button className="button primary" onClick={()=>setRunning(v=>!v)}>{running?<><Square size={15}/> Stop water simulation</>:<><Play size={15}/> Start water simulation</>}</button><span className="iot-muted">Water device sends a reading every 5 seconds.</span></div>
-      <div className="iot-kpi-grid"><article className="panel"><span>Registered devices</span><strong>{devices.length}</strong></article><article className="panel"><span>Readings stored</span><strong>{readings.length}</strong></article><article className="panel"><span>Open alerts</span><strong>{openAlerts}</strong></article><article className="panel"><span>Device status</span><strong>{devices.some(d=>d.online)?'Online':'No recent signal'}</strong></article></div>
+      <div className="iot-kpi-grid"><article className="panel"><span>Registered devices</span><strong>{devices.length}</strong></article><article className="panel"><span>Readings stored</span><strong>{readingTotal}</strong></article><article className="panel"><span>Open alerts</span><strong>{openAlerts}</strong></article><article className="panel"><span>Device status</span><strong>{devices.some(d=>d.online)?'Online':'No recent signal'}</strong></article></div>
       <div className="panel iot-chart-panel"><div className="panel-heading"><div><h2>Water tank history</h2><p>Latest stored water-level readings</p></div><Activity size={18}/></div>{chartData.length?<ResponsiveContainer width="100%" height={250}><LineChart data={chartData}><CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="time"/><YAxis domain={[0,100]}/><Tooltip/><Line type="monotone" dataKey="level" name="Water level (%)" stroke="#16865b" strokeWidth={2} dot={false}/></LineChart></ResponsiveContainer>:<p className="iot-muted">No readings yet. Start simulation or add a simulated reading.</p>}</div>
     </>}
     {tab==='devices' && <div className="panel iot-table-panel"><div className="panel-heading"><div><h2>Devices and GIS locations</h2><p>Device locations are shown where coordinates have been supplied.</p></div><MapPin size={18}/></div>{devices.length===0?<p className="iot-muted">No registered devices. Add a simulated reading to register a device.</p>:<><div className="iot-device-list">{devices.map(d=><div className="iot-device-row" key={d._id}><div><strong>{d.deviceName}</strong><p>{d._id} · {d.sensorType} · {d.location?.gramPanchayat || 'Location not specified'}</p></div><span className={d.online?'iot-online':'iot-offline'}>{d.online?<Wifi size={14}/>:<WifiOff size={14}/>} {d.online?'Online':'Offline'}</span></div>)}</div><MapContainer center={[21.2514,81.6296]} zoom={6} scrollWheelZoom={false} style={{height:320,width:'100%',borderRadius:12,marginTop:16}}><TileLayer attribution='&copy; OpenStreetMap contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"/>{devices.filter(d=>Number.isFinite(d.lat)&&Number.isFinite(d.lng)).map(d=><Marker key={d._id} position={[d.lat,d.lng]}><Popup><strong>{d.deviceName}</strong><br/>{d.sensorType}<br/>{d.online?'Online':'Offline'}</Popup></Marker>)}</MapContainer></>}</div>}

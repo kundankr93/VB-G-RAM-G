@@ -8,7 +8,17 @@ function databaseNameFromUri(uri) {
   if (typeof uri !== 'string' || !uri.trim()) return null;
 
   try {
-    return new mongoose.mongo.MongoClient(uri).options.dbName || null;
+    // Constructing the client validates the MongoDB connection-string format.
+    // MongoClient applies the driver's default database ("test") when the URI
+    // has no path, so inspect the original URI to distinguish an omitted name
+    // from an explicitly configured database.
+    new mongoose.mongo.MongoClient(uri);
+
+    const match = uri.match(/^mongodb(?:\+srv)?:\/\/[^/?#]+(?:\/([^?#]*))?/i);
+    if (!match || !match[1]) return null;
+
+    const databaseName = decodeURIComponent(match[1]);
+    return databaseName || null;
   } catch {
     return null;
   }

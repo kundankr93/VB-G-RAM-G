@@ -1,5 +1,6 @@
 import AdvancedFeatures from './AdvancedFeatures'
 import EnhancedMonitoring from './EnhancedMonitoring'
+import IoTMonitoring from './IoTMonitoring'
 import { useCallback, useEffect, useState } from 'react'
 import { Activity, AlertTriangle, Bell, CheckCircle2, ClipboardCheck, FileDown, IndianRupee, MessageSquareText, Plus, RefreshCw, ShieldAlert, Upload } from 'lucide-react'
 
@@ -41,13 +42,14 @@ export default function OperationsHub({ session, api, showDemoData }) {
     try { const blob = await api(`/api/operations/reports/works.csv?includeDemo=${showDemoData}`, {}, session.token); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'vb-gram-g-works-report.csv'; a.click(); URL.revokeObjectURL(url) } catch (e) { setError(e.message) }
   }
 
-  const tabs = ['Assignments', 'Finance', 'Evidence', 'Grievances', 'Notifications', 'Risk insights', 'Enhanced monitoring', 'Advanced features']
+  const tabs = ['Assignments', 'Finance', 'Evidence', 'Grievances', 'Notifications', 'Risk insights', 'Enhanced monitoring', 'IoT monitoring', 'Advanced features']
   return <section className="operations-hub">
     <div className="page-heading"><div><span className="eyebrow">PHASE 2–6 · OPERATIONS</span><h1>Operations hub</h1><p>Coordinate field delivery, finances, citizen feedback and operational risks.</p></div><div className="heading-actions"><button className="button secondary" onClick={downloadReport}><FileDown size={16}/> Export CSV</button><button className="button secondary" onClick={() => window.print()}><FileDown size={16}/> Print / Save PDF</button><button className="button secondary" onClick={load} disabled={busy}><RefreshCw size={16}/> Refresh</button></div></div>
     {error && <div className="alert error">{error}</div>}{message && <div className="alert success"><CheckCircle2 size={16}/>{message}</div>}
     <div className="operations-tabs">{tabs.map((name) => <button key={name} className={tab === name ? 'active' : ''} onClick={() => setTab(name)}>{name}</button>)}</div>
     {tab === 'Advanced features' && <AdvancedFeatures api={api} session={session} works={works} showDemoData={showDemoData} />}
     {tab === 'Enhanced monitoring' && <EnhancedMonitoring session={session} api={api} works={works} />}
+    {tab === 'IoT monitoring' && <IoTMonitoring session={session} api={api} />}
     {tab === 'Assignments' && <div className="operations-grid"><article className="panel operations-panel"><h2><ClipboardCheck size={18}/> Assign field work</h2>{manager ? <form className="operations-form" onSubmit={(e) => submit(e, '/api/operations/assignments', assignment, 'Assignment created and officer notified.')}>
       <label>Development work<select required value={assignment.workId} onChange={e => setAssignment({ ...assignment, workId: e.target.value })}><option value="">Select a work</option>{works.map(w => <option key={w._id} value={w._id}>{w.name}</option>)}</select></label>
       <label>Assign to<select required value={assignment.assigneeId} onChange={e => setAssignment({ ...assignment, assigneeId: e.target.value })}><option value="">Select officer</option>{data.officers.map(o => <option key={o._id} value={o._id}>{o.name} · {o.role}</option>)}</select></label>

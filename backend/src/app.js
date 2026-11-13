@@ -14,8 +14,8 @@ const enhancementsRoutes = require('./routes/enhancements');
 const { writeRateLimit } = require('./middleware/authRateLimits');
 const advancedRoutes=require('./routes/advanced');
 const publicTransparencyRoutes=require('./routes/publicTransparency');
-const ActivityLog=require('./models/ActivityLog');
 const iotRoutes = require('./routes/iot');
+const ActivityLog=require('./models/ActivityLog');
 
 const app = express();
 const allowedOrigins = (process.env.CLIENT_ORIGIN || 'http://localhost:5173')
@@ -58,19 +58,6 @@ app.get('/api/health', rejectUnknownQueryParams(), (request, response) => {
     status: database === 'connected' ? 'ok' : 'unavailable',
     database,
   });
-});
-
-// Keep health checks reachable while MongoDB is unavailable. Database-backed
-// API calls fail fast with 503 instead of hanging in Mongoose's command buffer.
-app.use('/api', (request, response, next) => {
-  if (mongoose.connection.readyState !== 1) {
-    const states = ['disconnected', 'connected', 'connecting', 'disconnecting'];
-    return response.status(503).json({
-      message: 'Database is temporarily unavailable. Please retry shortly.',
-      database: states[mongoose.connection.readyState] || 'unknown',
-    });
-  }
-  return next();
 });
 
 app.use('/api/public', publicTransparencyRoutes);

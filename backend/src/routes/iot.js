@@ -31,8 +31,11 @@ router.get('/readings', async (req, res, next) => {
     const filter = {};
     if (req.query.deviceId) filter.deviceId = String(req.query.deviceId).slice(0,100);
     if (req.query.sensorType && TYPES.includes(req.query.sensorType)) filter.sensorType = req.query.sensorType;
-    const data = await SensorReading.find(filter).sort({ recordedAt: -1 }).limit(limit).populate('workId','name status actualProgress location').lean();
-    res.json({ data });
+    const [data, total] = await Promise.all([
+      SensorReading.find(filter).sort({ recordedAt: -1 }).limit(limit).populate('workId','name status actualProgress location').lean(),
+      SensorReading.countDocuments(filter)
+    ]);
+    res.json({ data, total });
   } catch (e) { next(e); }
 });
 

@@ -21,7 +21,8 @@
     "import-locations": "node src/seed/importLocations.js",
     "fetch-lgd-blocks": "node src/seed/fetchLgdBlocks.js",
     "init-categories": "node src/seed/initializeCategories.js",
-    "set-admin-password": "node src/seed/setAdminPassword.js"
+    "set-admin-password": "node src/seed/setAdminPassword.js",
+    "update-demo-lifecycle": "node src/seed/updateDemoLifecycle.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
