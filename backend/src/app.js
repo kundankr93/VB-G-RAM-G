@@ -15,6 +15,7 @@ const { writeRateLimit } = require('./middleware/authRateLimits');
 const advancedRoutes=require('./routes/advanced');
 const publicTransparencyRoutes=require('./routes/publicTransparency');
 const ActivityLog=require('./models/ActivityLog');
+const iotRoutes = require('./routes/iot');
 
 const app = express();
 const allowedOrigins = (process.env.CLIENT_ORIGIN || 'http://localhost:5173')
@@ -82,6 +83,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/operations', operationsRoutes);
 app.use('/api/enhancements', enhancementsRoutes);
 app.use('/api/advanced', advancedRoutes);
+app.use('/api/iot', iotRoutes);
 
 app.use((request, response) => {
   response.status(404).json({ message: 'Route not found.' });

@@ -47,6 +47,7 @@ import {
 import { Circle, MapContainer, Popup, TileLayer } from 'react-leaflet'
 import DistrictChoropleth from './components/DistrictChoropleth'
 import OperationsHub from './OperationsHub'
+import IoTMonitoring from './IoTMonitoring'
 import 'leaflet/dist/leaflet.css'
 import './App.css'
 
@@ -621,6 +622,7 @@ function Dashboard({ session, onLogout }) {
           { name: 'Works registry', icon: ClipboardList, target: 'registry' },
           { name: 'GIS & geography', icon: MapPin, target: 'geography' },
           { name: 'Operations hub', icon: ClipboardList, target: 'operations-hub' },
+          { name: 'IoT Monitoring', icon: Activity, target: 'iot-monitoring' },
           ...(session.user.role === 'admin' ? [{ name: 'User accounts', icon: UserRoundCog, target: 'user-management' }] : []),
         ].map(({ name, icon: Icon, target }) => (
           <button key={name} className={`nav-item ${activeTab === name ? 'selected' : ''}`} onClick={() => { setActiveTab(name); window.requestAnimationFrame(() => document.getElementById(target)?.scrollIntoView({ behavior: 'smooth' })) }}>
@@ -649,6 +651,7 @@ function Dashboard({ session, onLogout }) {
           </section>
 
           {activeTab === 'Operations hub' && <div id="operations-hub"><OperationsHub session={session} api={api} showDemoData={showDemoData} /></div>}
+          {activeTab === 'IoT Monitoring' && <div id="iot-monitoring"><IoTMonitoring session={session} api={api} /></div>}
 
           {notice && <div className="alert success toast" role="status" aria-live="polite"><CheckCircle2 size={17} />{notice}<button onClick={() => setNotice('')} aria-label="Dismiss"><X size={16} /></button></div>}
           {error && <div className="alert error" role="alert"><AlertTriangle size={17} /><span>{error}</span><button className="alert-retry" disabled={loading} onClick={loadData}>Retry</button><button onClick={() => setError('')} aria-label="Dismiss"><X size={16} /></button></div>}
